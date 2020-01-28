@@ -14,6 +14,10 @@ impl GameSeed {
     Self(rand::thread_rng().gen::<[u8; 32]>())
   }
 
+  pub fn from_arr(arr: [u8; 32]) -> Self {
+    Self(arr)
+  }
+
   pub fn from_string(s: String) -> Result<Self, InvalidSeedError> {
     Self::from_str(s.as_str())
   }

@@ -4,7 +4,7 @@ use super::rng::GameRng;
 use super::tile::{RotationDirection, Tile, TileKind, TilePos};
 use super::util::{BitFlag, Flag, Size};
 use rand::Rng;
-use std::time::{Duration, Instant};
+use std::time::Instant;
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Board {

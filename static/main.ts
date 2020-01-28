@@ -12,6 +12,83 @@ function flag_count(n: number) {
   return c;
 }
 
+function format_time(n: number) {
+  const seconds = Math.floor((n / 1000) % 60);
+  const minutes = Math.floor((n / 1000 / 60) % 60);
+
+  n -= seconds * 1000;
+  n -= minutes * 1000;
+
+  let s = "";
+  if (minutes) {
+    s += minutes.toString() + ":";
+  }
+  s += seconds.toString() + ".";
+  s += n.toString();
+
+  return s;
+}
+
+interface HighScore {
+  seed: string;
+  time: number;
+  created_at: number;
+}
+
+interface Save {
+  times_played: number;
+  score: HighScore;
+}
+
+interface SaveResult {
+  save: Save;
+  last_high_score: number | null;
+  is_high_score: boolean;
+}
+
+function load(key: string) {
+  let s = localStorage.getItem(key);
+  if (s) {
+    return JSON.parse(s) as Save;
+  }
+
+  return null;
+}
+
+function save(size: Size, seed: string, time: number) {
+  let key = size.width.toString() + "x" + size.height.toString();
+  var save = load(key);
+  var last_high_score = null;
+  var is_high_score = false;
+
+  if (save) {
+    last_high_score = save.score.time;
+    save.times_played += 1;
+    if (time < save.score.time) {
+      save.score.created_at = Date.now();
+      save.score.seed = seed;
+      save.score.time = time;
+      is_high_score = true;
+    }
+  } else {
+    is_high_score = true;
+    save = {
+      times_played: 1,
+      score: { created_at: Date.now(), seed: seed, time: time }
+    };
+  }
+
+  localStorage.setItem(key, JSON.stringify(save));
+
+  let sr: SaveResult = {
+    save: save,
+    last_high_score: last_high_score,
+    is_high_score: is_high_score
+  };
+
+  return sr;
+}
+
 enum TileKind {
   CONNECTOR,
   SERVER,
@@ -209,6 +286,7 @@ class Board {
 
     this.canvas.height = 600;
     this.canvas.width = 600;
+
     this.canvas.onmousemove = event => {
       let mouse_pos: Pos = { x: event.clientX, y: event.clientY };
       let tile_pos = this.get_tile_pos_from_mouse_pos(mouse_pos);
@@ -485,13 +563,17 @@ class App {
   ws: WebSocket;
   token: string | null;
   game: Game | null;
-  time_element: HTMLParagraphElement;
+  time_element: HTMLSpanElement;
+  time_dif_element: HTMLSpanElement;
+  seed_element: HTMLParagraphElement;
 
   constructor() {
     this.game = null;
     this.ws = new WebSocket(WS_HOST);
     this.token = null;
-    this.time_element = $("time")! as HTMLParagraphElement;
+    this.time_element = $("time")! as HTMLSpanElement;
+    this.time_dif_element = $("time-dif")! as HTMLSpanElement;
+    this.seed_element = $("seed")! as HTMLParagraphElement;
 
     this.init_listeners();
     this.init_socket();
@@ -508,6 +590,10 @@ class App {
   handle_message(msg: any) {
     let req: ClientRequest = JSON.parse(msg);
 
+    if (!req) {
+      return;
+    }
+
     switch (req.method) {
       case ClientMethodKind.SetToken:
         let token: Token = JSON.parse(req.data);
@@ -523,6 +609,9 @@ class App {
           };
           this.send(ServerMethodKind.RotateTile, req);
         };
+        this.seed_element.hidden = false;
+        this.seed_element.textContent = "seed: " + nw.seed;
+        this.time_dif_element.hidden = true;
         break;
 
       case ClientMethodKind.UpdateGameState:
@@ -533,6 +622,27 @@ class App {
           if (data.is_solved && !this.game.is_finished) {
             this.game.is_finished = true;
             this.game.finish_time = data.time;
+
+            let sr = save(
+              { width: this.game.board.width, height: this.game.board.height },
+              this.game.seed,
+              data.time
+            );
+            if (sr.last_high_score) {
+              const dif = Math.abs(data.time - sr.last_high_score);
+
+              this.time_dif_element.textContent = "";
+              if (data.time < sr.last_high_score) {
+                this.time_dif_element.style.color = "#0f0";
+                this.time_dif_element.textContent += "-";
+              } else {
+                this.time_dif_element.style.color = "#f00";
+                this.time_dif_element.textContent += "+";
+              }
+              this.time_dif_element.textContent += format_time(dif);
+              this.time_dif_element.hidden = false;
+            }
+            console.log(sr);
           }
         }
         break;
@@ -579,20 +689,7 @@ class App {
           t = this.game.current_time;
         }
 
-        const seconds = Math.floor((t / 1000) % 60);
-        const minutes = Math.floor((t / 1000 / 60) % 60);
-
-        t -= seconds * 1000;
-        t -= minutes * 1000;
-
-        let time_s = "time: ";
-        if (minutes) {
-          time_s += minutes.toString() + ":";
-        }
-        time_s += seconds.toString() + ".";
-        time_s += t.toString();
-
-        this.time_element.textContent = time_s;
+        this.time_element.textContent = "time: " + format_time(t);
       }
     }, 20);
   }
