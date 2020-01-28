@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta http-equiv="X-UA-Compatible" content="ie=edge" />
+    <style>
+      * {
+        margin: 0;
+        font-family: Arial, Helvetica, sans-serif;
+      }
+      canvas {
+        margin: 20px;
+        cursor: pointer;
+        display: inline-block;
+        -webkit-user-select: none;
+        -moz-user-select: none;
+        -khtml-user-select: none;
+        -ms-user-select: none;
+      }
+      div {
+        margin: 20px;
+        display: inline-block;
+        vertical-align: top;
+      }
+    </style>
+    <title>Document</title>
+  </head>
+  <body>
+    <canvas id="canvas" height="600" width="600"></canvas>
+
+    <div>
+      <p id="time" style="margin-bottom:10px">time: 0</p>
+      <button id="5x5">5x5</button>
+      <button id="7x7">7x7</button>
+      <button id="10x10">10x10</button>
+      <button id="15x15">15x15</button>
+      <button id="20x20">20x20</button>
+      <script src="main.js"></script>
+    </div>
+  </body>
+</html>
