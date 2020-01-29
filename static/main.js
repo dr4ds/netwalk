@@ -424,7 +424,6 @@ class App {
                             this.time_dif_element.textContent += format_time(dif);
                             this.time_dif_element.hidden = false;
                         }
-                        console.log(sr);
                     }
                 }
                 break;
